@@ -1,0 +1,39 @@
+{
+  "name": "ljsp",
+  "version": "0.1.0",
+  "description": "A lispy syntax for writing code targeting the js platform",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "check": "gts check",
+    "clean": "gts clean",
+    "compile": "rm -rf build && tsc -p .",
+    "fix": "gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colinlcrawford/ljsp.git"
+  },
+  "keywords": [
+    "lisp",
+    "js"
+  ],
+  "author": "Colin Crawford",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/colinlcrawford/ljsp/issues"
+  },
+  "homepage": "https://github.com/colinlcrawford/ljsp#readme",
+  "devDependencies": {
+    "@types/jest": "^24.0.19",
+    "@types/node": "^10.0.3",
+    "gts": "^1.1.0",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.1.0",
+    "typescript": "~3.5.0"
+  }
+}
