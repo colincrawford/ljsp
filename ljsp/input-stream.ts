@@ -10,26 +10,13 @@ export interface InputStream {
   source: string;
 }
 
-export interface InputStreamOperationResult<T = string> {
-  result: T;
-  inputStream: InputStream;
-}
-
-export function fromFile(filePath: string) {
-  return fromString(fs.readFileSync(filePath, { encoding: 'utf-8' }));
-}
-
-export function fromString(source: string) {
-  return Object.freeze({
+export function fromString(source: string): InputStream {
+  return {
     line: 0,
     column: 0,
     cursor: 0,
     source,
-  });
-}
-
-export function copy(inputStream: InputStream): InputStream {
-  return { ...inputStream };
+  };
 }
 
 export function isFinished(inputStream: InputStream): boolean {
@@ -38,24 +25,19 @@ export function isFinished(inputStream: InputStream): boolean {
 
 export function peek(inputStream: InputStream): string {
   if (isFinished(inputStream)) {
-    fatalError(inputStream, '"peek" called on an empty stream');
+    fatalError('"peek" called on an empty stream', inputStream);
   }
 
   return inputStream.source[inputStream.cursor];
 }
 
-export function next(inputStream: InputStream): InputStreamOperationResult {
+export function next(inputStream: InputStream): string {
   const nextChar = peek(inputStream);
   const isNewline = nextChar === os.EOL;
-  const line = isNewline ? inputStream.line + 1 : inputStream.line;
-  const column = isNewline ? 0 : inputStream.column + 1;
-  return Object.freeze({
-    result: nextChar,
-    inputStream: {
-      ...inputStream,
-      line,
-      column,
-      cursor: inputStream.cursor + 1,
-    },
-  });
+  if (isNewline) {
+    inputStream.line += 1;
+    inputStream.column = 0;
+  }
+  inputStream.cursor++;
+  return nextChar;
 }

@@ -1,25 +1,43 @@
 import { InputStream } from './input-stream';
 
-export function info(inputStream: InputStream, message: string): void {
-  const { column, line } = inputStream;
-  console.log(`[INFO] - ${line}:${column} - ${message}`);
+enum LogLevel {
+  Error = 'ERROR',
+  Info = 'INFO',
+  Debug = 'DEBUG',
 }
 
-export function debug(inputStream: InputStream, message: string): void {
+function describeStream(inputStream: InputStream | undefined) {
+  if (!inputStream) return '';
   const { column, line } = inputStream;
-  console.log(`[DEBUG] - ${line}:${column} - ${message}`);
+  return ` - ${line}:${column}`;
 }
 
-export function error(inputStream: InputStream, message: string): void {
-  const { column, line } = inputStream;
-  console.log(`[ERROR] - ${line}:${column} - ${message}`);
+function formatMessage(
+  logLevel: LogLevel,
+  message: string,
+  inputStream?: InputStream
+): string {
+  const streamDescription = describeStream(inputStream);
+  return `[${logLevel}]${streamDescription} - ${message}`;
 }
 
-export function fatalError(inputStream: InputStream, message: string): void {
-  error(inputStream, message);
+export function info(message: string, inputStream?: InputStream): void {
+  console.log(formatMessage(LogLevel.Info, message, inputStream));
+}
+
+export function debug(message: string, inputStream?: InputStream): void {
+  console.log(formatMessage(LogLevel.Debug, message, inputStream));
+}
+
+export function error(message: string, inputStream?: InputStream): void {
+  console.log(formatMessage(LogLevel.Error, message, inputStream));
+}
+
+export function fatalError(message: string, inputStream?: InputStream): void {
+  error(message, inputStream);
   process.exit(1);
 }
 
-export function syntaxError(inputStream: InputStream, message: string): void {
-  fatalError(inputStream, `Syntax Error - ${message}`);
+export function syntaxError(message: string, inputStream?: InputStream): void {
+  fatalError(`Syntax Error - ${message}`, inputStream);
 }

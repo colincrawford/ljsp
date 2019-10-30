@@ -1,10 +1,4 @@
-import {
-  InputStream,
-  InputStreamOperationResult,
-  next,
-  peek,
-  isFinished,
-} from './input-stream';
+import { InputStream, next, peek, isFinished } from './input-stream';
 import { removeFromString } from './utils';
 import { syntaxError, fatalError } from './logger';
 
@@ -26,11 +20,17 @@ export type Token =
   | OpenParenToken
   | CloseParenToken;
 
-export type TokenReader = (inputStream: InputStream) => TokenReadResult;
+export type TokenReader = (inputStream: InputStream) => Token;
 
-export interface TokenReadResult {
-  token: Token;
-  inputStream: InputStream;
+export function getTokenReader(nextChar: string): TokenReader {
+  if (isString(nextChar)) return readString;
+  if (isNumber(nextChar)) return readNumber;
+  if (isSymbol(nextChar)) return readSymbol;
+  if (isOpenParen(nextChar)) return readOpenParen;
+  if (isCloseParen(nextChar)) return readCloseParen;
+  fatalError(`Unable to process character "${nextChar}"`);
+  // typescript doesn't recognize that fatalError throws every time
+  throw new Error();
 }
 
 export type DoneReading = (
@@ -38,17 +38,10 @@ export type DoneReading = (
 ) => (resultSoFar: string) => boolean;
 
 export function readUntil(inputStream: InputStream) {
-  return (doneReading: DoneReading): InputStreamOperationResult => {
-    let stream = inputStream;
+  return (doneReading: DoneReading) => {
     let result = '';
-
-    while (!doneReading(stream)(result)) {
-      const { inputStream: updatedStream, result: nextChar } = next(stream);
-      stream = updatedStream;
-      result += nextChar;
-    }
-
-    return { inputStream: stream, result };
+    while (!doneReading(inputStream)(result)) result += next(inputStream);
+    return result;
   };
 }
 
@@ -69,23 +62,18 @@ export function isNumber(startingChar: string): boolean {
   return Boolean(startingChar.match(/[0-9]/));
 }
 
-export function readNumber(inputStream: InputStream): TokenReadResult {
+export function readNumber(inputStream: InputStream): Token {
   const done: DoneReading = stream => result =>
     isFinished(stream) || !Boolean(peek(stream).match(/[\d\_]/));
 
-  const { inputStream: stream, result } = readUntil(inputStream)(done);
+  const result = readUntil(inputStream)(done);
 
   if (result[result.length - 1] === '_') {
     const errorMsg = `"_" is not allowed at the end of numeric literals - "${result}"`;
-    syntaxError(stream, errorMsg);
+    syntaxError(errorMsg, inputStream);
   }
 
-  console.log(removeFromString('_')(result));
-
-  return {
-    inputStream: stream,
-    token: numberToken(Number(removeFromString('_')(result))),
-  };
+  return numberToken(Number(removeFromString('_')(result)));
 }
 
 // Strings
@@ -105,15 +93,15 @@ export function isString(startingChar: string): boolean {
   return Boolean(startingChar.match(/["']/));
 }
 
-export function readString(inputStream: InputStream): TokenReadResult {
+export function readString(inputStream: InputStream): StringToken {
   // Assumes the first char is a valid string starter
   // we have two quotes and they match
   const done: DoneReading = stream => result =>
     Boolean(result.length > 2 && result[0] === result[result.length - 1]);
 
-  const { inputStream: stream, result } = readUntil(inputStream)(done);
+  const result = readUntil(inputStream)(done);
 
-  return { inputStream: stream, token: stringToken(result.trim()) };
+  return stringToken(result.trim());
 }
 
 // Symbols
@@ -137,7 +125,7 @@ function isValidSymbolChar(character: string): boolean {
 
 export const isSymbol = isValidSymbolChar;
 
-export function readSymbol(inputStream: InputStream): TokenReadResult {
+export function readSymbol(inputStream: InputStream): Token {
   const done: DoneReading = stream => result => {
     const nextChar = peek(stream);
     return (
@@ -145,9 +133,9 @@ export function readSymbol(inputStream: InputStream): TokenReadResult {
     );
   };
 
-  const { inputStream: stream, result } = readUntil(inputStream)(done);
+  const result = readUntil(inputStream)(done);
 
-  return { inputStream: stream, token: symbolToken(result.trim()) };
+  return symbolToken(result.trim());
 }
 
 // Parens
@@ -155,35 +143,38 @@ interface OpenParenToken {
   type: TokenType.OpenParen;
 }
 
-function openParenToken() {
+function openParenToken(): OpenParenToken {
   return Object.freeze({
     type: TokenType.OpenParen,
     token: '(',
   });
 }
 
+export function isOpenParen(startingChar: string): boolean {
+  return startingChar === '(';
+}
+
+export function readOpenParen(inputStream: InputStream): OpenParenToken {
+  next(inputStream);
+  return openParenToken();
+}
+
 interface CloseParenToken {
   type: TokenType.CloseParen;
 }
 
-function closeParenToken() {
+function closeParenToken(): CloseParenToken {
   return Object.freeze({
     type: TokenType.CloseParen,
     token: ')',
   });
 }
 
-export function isParen(startingChar: string): boolean {
-  return Boolean(startingChar.match(/[()]/));
+export function isCloseParen(startingChar: string): boolean {
+  return startingChar === ')';
 }
 
-export function readParen(inputStream: InputStream): TokenReadResult {
-  const { inputStream: advancedStream, result: paren } = next(inputStream);
-  let token;
-
-  if (paren === '(') token = openParenToken();
-  else if (paren === ')') token = closeParenToken();
-  else fatalError(inputStream, `Tried to read "${paren}" as a paren`);
-
-  return { inputStream: advancedStream, token: token as Token };
+export function readCloseParen(inputStream: InputStream): CloseParenToken {
+  next(inputStream);
+  return closeParenToken();
 }
