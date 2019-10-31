@@ -9,8 +9,9 @@ export enum TokenType {
   OpenParen = 'openParen',
   CloseParen = 'closeParen',
 }
-export interface BaseToken {
+export interface BaseToken<T = string> {
   type: TokenType;
+  token: T;
 }
 
 export type Token =
@@ -46,9 +47,8 @@ export function readUntil(inputStream: InputStream) {
 }
 
 // Numbers
-interface NumberToken extends BaseToken {
+interface NumberToken extends BaseToken<number> {
   type: TokenType.Number;
-  token: number;
 }
 
 function numberToken(num: number): NumberToken {
@@ -77,9 +77,8 @@ export function readNumber(inputStream: InputStream): Token {
 }
 
 // Strings
-interface StringToken {
+interface StringToken extends BaseToken {
   type: TokenType.String;
-  token: string;
 }
 
 function stringToken(str: string): StringToken {
@@ -105,9 +104,8 @@ export function readString(inputStream: InputStream): StringToken {
 }
 
 // Symbols
-interface SymbolToken {
+interface SymbolToken extends BaseToken {
   type: TokenType.Symbol;
-  token: string;
 }
 
 function symbolToken(symb: string): SymbolToken {
@@ -139,7 +137,7 @@ export function readSymbol(inputStream: InputStream): Token {
 }
 
 // Parens
-interface OpenParenToken {
+interface OpenParenToken extends BaseToken {
   type: TokenType.OpenParen;
 }
 
@@ -159,7 +157,7 @@ export function readOpenParen(inputStream: InputStream): OpenParenToken {
   return openParenToken();
 }
 
-interface CloseParenToken {
+interface CloseParenToken extends BaseToken {
   type: TokenType.CloseParen;
 }
 
