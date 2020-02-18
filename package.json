@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/colinlcrawford/ljsp#readme",
   "devDependencies": {
-    "@types/jest": "^24.0.25",
+    "@types/jest": "^25.1.2",
     "@types/node": "^13.7.2",
     "gts": "^1.1.2",
     "jest": "^24.9.0",
