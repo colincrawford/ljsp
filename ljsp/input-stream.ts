@@ -20,7 +20,7 @@ export function fromString(source: string): InputStream {
 }
 
 export function isFinished(inputStream: InputStream): boolean {
-  return inputStream.cursor >= inputStream.source.length;
+  return inputStream.cursor >= inputStream.source.length - 1;
 }
 
 export function peek(inputStream: InputStream): string {
