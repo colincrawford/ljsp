@@ -26,6 +26,7 @@ export function isFinished(inputStream: InputStream): boolean {
 export function peek(inputStream: InputStream): string {
   if (isFinished(inputStream)) {
     fatalError('"peek" called on an empty stream', inputStream);
+    throw new Error('Fatal Error');
   }
 
   return inputStream.source[inputStream.cursor];
@@ -38,6 +39,7 @@ export function next(inputStream: InputStream): string {
     inputStream.line += 1;
     inputStream.column = 0;
   }
-  inputStream.cursor++;
+  ++inputStream.cursor;
+  ++inputStream.column;
   return nextChar;
 }

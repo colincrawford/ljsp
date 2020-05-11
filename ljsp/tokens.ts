@@ -10,8 +10,8 @@ export enum TokenType {
   CloseParen = 'closeParen',
 }
 
-export function tokenToString({ token, position: { column, line } }: Token) {
-  return ` - ${line}:${column} - "${token}" - `;
+export function tokenToString({ token, startPosition, endPosition }: Token) {
+  return ` - ${startPosition.line}:${startPosition.column} - ${endPosition.line}:${endPosition.column} -> "${token}" - `;
 }
 
 export interface TokenPosition {
@@ -26,7 +26,8 @@ export function tokenPosition({ line, column }: InputStream): TokenPosition {
 export interface BaseToken<T = string> {
   type: TokenType;
   token: T;
-  position: TokenPosition;
+  startPosition: TokenPosition;
+  endPosition: TokenPosition;
   toString(): string;
 }
 
@@ -52,8 +53,7 @@ export function getTokenReader(nextChar: string): TokenReader {
   if (isOpenParen(nextChar)) return readOpenParen;
   if (isCloseParen(nextChar)) return readCloseParen;
   fatalError(`Unable to process character "${nextChar}"`);
-  // typescript doesn't recognize that fatalError throws every time
-  throw new Error();
+  throw new Error('Fatal Error Encountered');
 }
 
 export type DoneReading = (
@@ -73,11 +73,16 @@ interface NumberToken extends BaseToken<number> {
   type: TokenType.Number;
 }
 
-function numberToken(num: number, position: TokenPosition): NumberToken {
+function NumberToken(
+  num: number,
+  startPosition: TokenPosition,
+  endPosition: TokenPosition
+): NumberToken {
   return Object.freeze({
     type: TokenType.Number,
     token: num,
-    position,
+    startPosition,
+    endPosition,
     ...baseToken,
   });
 }
@@ -87,7 +92,7 @@ export function isNumber(startingChar: string): boolean {
 }
 
 export function readNumber(inputStream: InputStream): Token {
-  const position = tokenPosition(inputStream);
+  const startPosition = tokenPosition(inputStream);
   const done: DoneReading = stream => result =>
     isFinished(stream) || !Boolean(peek(stream).match(/[\d\_]/));
 
@@ -97,8 +102,13 @@ export function readNumber(inputStream: InputStream): Token {
     const errorMsg = `"_" is not allowed at the end of numeric literals - "${result}"`;
     syntaxError(errorMsg, inputStream);
   }
+  const endPosition = tokenPosition(inputStream);
 
-  return numberToken(Number(removeFromString('_')(result)), position);
+  return NumberToken(
+    Number(removeFromString('_')(result)),
+    startPosition,
+    endPosition
+  );
 }
 
 // Strings
@@ -106,11 +116,16 @@ interface StringToken extends BaseToken {
   type: TokenType.String;
 }
 
-function stringToken(str: string, position: TokenPosition): StringToken {
+function StringToken(
+  str: string,
+  startPosition: TokenPosition,
+  endPosition: TokenPosition
+): StringToken {
   return Object.freeze({
     type: TokenType.String,
     token: str,
-    position,
+    startPosition,
+    endPosition,
     ...baseToken,
   });
 }
@@ -120,15 +135,16 @@ export function isString(startingChar: string): boolean {
 }
 
 export function readString(inputStream: InputStream): StringToken {
-  const position = tokenPosition(inputStream);
+  const startPosition = tokenPosition(inputStream);
   // Assumes the first char is a valid string starter
   // we have two quotes and they match
   const done: DoneReading = stream => result =>
     Boolean(result.length > 2 && result[0] === result[result.length - 1]);
 
   const result = readUntil(inputStream)(done);
+  const endPosition = tokenPosition(inputStream);
 
-  return stringToken(result.trim(), inputStream);
+  return StringToken(result.trim(), startPosition, endPosition);
 }
 
 // Symbols
@@ -136,11 +152,16 @@ interface SymbolToken extends BaseToken {
   type: TokenType.Symbol;
 }
 
-function symbolToken(symb: string, position: TokenPosition): SymbolToken {
+function SymbolToken(
+  symb: string,
+  startPosition: TokenPosition,
+  endPosition: TokenPosition
+): SymbolToken {
   return Object.freeze({
     type: TokenType.Symbol,
     token: symb,
-    position,
+    startPosition,
+    endPosition,
     ...baseToken,
   });
 }
@@ -154,7 +175,7 @@ function isValidSymbolChar(character: string): boolean {
 export const isSymbol = isValidSymbolChar;
 
 export function readSymbol(inputStream: InputStream): Token {
-  const position = tokenPosition(inputStream);
+  const startPosition = tokenPosition(inputStream);
   const done: DoneReading = stream => result => {
     const nextChar = peek(stream);
     return (
@@ -163,8 +184,9 @@ export function readSymbol(inputStream: InputStream): Token {
   };
 
   const result = readUntil(inputStream)(done);
+  const endPosition = tokenPosition(inputStream);
 
-  return symbolToken(result.trim(), position);
+  return SymbolToken(result.trim(), startPosition, endPosition);
 }
 
 // Parens
@@ -172,11 +194,15 @@ interface OpenParenToken extends BaseToken {
   type: TokenType.OpenParen;
 }
 
-function openParenToken(position: TokenPosition): OpenParenToken {
+function OpenParenToken(
+  startPosition: TokenPosition,
+  endPosition: TokenPosition
+): OpenParenToken {
   return Object.freeze({
     type: TokenType.OpenParen,
     token: '(',
-    position,
+    startPosition,
+    endPosition,
     ...baseToken,
   });
 }
@@ -186,20 +212,25 @@ export function isOpenParen(startingChar: string): boolean {
 }
 
 export function readOpenParen(inputStream: InputStream): OpenParenToken {
-  const position = tokenPosition(inputStream);
+  const startPosition = tokenPosition(inputStream);
   next(inputStream);
-  return openParenToken(position);
+  const endPosition = tokenPosition(inputStream);
+  return OpenParenToken(startPosition, endPosition);
 }
 
 interface CloseParenToken extends BaseToken {
   type: TokenType.CloseParen;
 }
 
-function closeParenToken(position: TokenPosition): CloseParenToken {
+function CloseParenToken(
+  startPosition: TokenPosition,
+  endPosition: TokenPosition
+): CloseParenToken {
   return Object.freeze({
     type: TokenType.CloseParen,
     token: ')',
-    position,
+    startPosition,
+    endPosition,
     ...baseToken,
   });
 }
@@ -209,7 +240,8 @@ export function isCloseParen(startingChar: string): boolean {
 }
 
 export function readCloseParen(inputStream: InputStream): CloseParenToken {
-  const position = tokenPosition(inputStream);
+  const startPosition = tokenPosition(inputStream);
   next(inputStream);
-  return closeParenToken(position);
+  const endPosition = tokenPosition(inputStream);
+  return CloseParenToken(startPosition, endPosition);
 }

@@ -15,7 +15,7 @@ export enum ExpressionLiteral {
 export interface ExpressionLiteralNode {
   type: ExpressionLiteral;
   value: any;
-};
+}
 
 export type ASTNode = FunctionCallNode | ExpressionLiteralNode;
 
@@ -23,10 +23,9 @@ export type AST = ASTNode[];
 
 export type Form = Token[];
 
-export function parse(tokens: Token[]): AST {
-  const forms = groupForms(tokens);
-  const ast = forms.map(parseForm);
-  return ast;
+export interface Program extends Node {
+  type: NodeType.Program;
+  forms: Form[];
 }
 
 export function groupForms(tokens: Token[]): Form[] {
@@ -54,7 +53,7 @@ export function groupForms(tokens: Token[]): Form[] {
 
 export function parseForm(form: Form): ASTNode {
   if (form[0].type === TokenType.OpenParen) {
-    return parseFunctionCall(form)
+    return parseFunctionCall(form);
   }
   return parseExpressionLiteral(form);
 }
@@ -64,7 +63,7 @@ function parseFunctionCall(form: Form): ASTNode {
   const [name, ...args] = form.slice(1, form.length - 1);
   const node = Object.freeze({
     fnName: `${name.token}`,
-    args: groupForms(args).map(parseForm)
+    args: groupForms(args).map(parseForm),
   });
   console.log('node', node);
   return node;
@@ -77,7 +76,7 @@ function parseExpressionLiteral(form: Form): ASTNode {
     throw new Error();
   }
   return Object.freeze({
-    type: token.type as unknown as ExpressionLiteral,
+    type: (token.type as unknown) as ExpressionLiteral,
     value: token.token,
   });
 }
