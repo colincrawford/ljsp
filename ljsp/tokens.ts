@@ -94,7 +94,7 @@ export function isNumber(startingChar: string): boolean {
 export function readNumber(inputStream: InputStream): Token {
   const startPosition = tokenPosition(inputStream);
   const done: DoneReading = stream => result =>
-    isFinished(stream) || !Boolean(peek(stream).match(/[\d\_]/));
+    isFinished(stream) || !Boolean((peek(stream) || '').match(/[\d\_]/));
 
   const result = readUntil(inputStream)(done);
 
@@ -177,7 +177,7 @@ export const isSymbol = isValidSymbolChar;
 export function readSymbol(inputStream: InputStream): Token {
   const startPosition = tokenPosition(inputStream);
   const done: DoneReading = stream => result => {
-    const nextChar = peek(stream);
+    const nextChar = peek(stream) || '';
     return (
       isFinished(stream) || nextChar === ' ' || !isValidSymbolChar(nextChar)
     );

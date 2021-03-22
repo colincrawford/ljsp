@@ -1,9 +1,22 @@
 import { Token, TokenType } from './tokens';
 import { fatalError, debug } from './logger';
 
+export enum NodeType {
+  FunctionCall = 'FunctionCall',
+  ExpressionLiteral = 'ExpressionLiteral',
+}
+
 export interface FunctionCallNode {
+  type: NodeType;
   fnName: string;
   args: ASTNode[];
+}
+
+function createFunctionCallNode(
+  fnName: string,
+  args: ASTNode[]
+): FunctionCallNode {
+  return Object.freeze({ fnName, args, type: NodeType.FunctionCall });
 }
 
 export enum ExpressionLiteral {
@@ -13,8 +26,20 @@ export enum ExpressionLiteral {
 }
 
 export interface ExpressionLiteralNode {
-  type: ExpressionLiteral;
-  value: any;
+  type: NodeType;
+  expressionType: ExpressionLiteral;
+  value: string | number;
+}
+
+function createExpressionLiteralNode(
+  expressionType: ExpressionLiteral,
+  value: string | number
+): ExpressionLiteralNode {
+  return Object.freeze({
+    expressionType,
+    value,
+    type: NodeType.ExpressionLiteral,
+  });
 }
 
 export type ASTNode = FunctionCallNode | ExpressionLiteralNode;
@@ -22,11 +47,6 @@ export type ASTNode = FunctionCallNode | ExpressionLiteralNode;
 export type AST = ASTNode[];
 
 export type Form = Token[];
-
-export interface Program extends Node {
-  type: NodeType.Program;
-  forms: Form[];
-}
 
 export function groupForms(tokens: Token[]): Form[] {
   const groups: Token[][] = [];
@@ -51,6 +71,12 @@ export function groupForms(tokens: Token[]): Form[] {
   return groups;
 }
 
+export function parse(form: Form): AST {
+  const roots: AST = []
+  
+  return roots;
+}
+
 export function parseForm(form: Form): ASTNode {
   if (form[0].type === TokenType.OpenParen) {
     return parseFunctionCall(form);
@@ -61,10 +87,10 @@ export function parseForm(form: Form): ASTNode {
 function parseFunctionCall(form: Form): ASTNode {
   console.log('form', form);
   const [name, ...args] = form.slice(1, form.length - 1);
-  const node = Object.freeze({
-    fnName: `${name.token}`,
-    args: groupForms(args).map(parseForm),
-  });
+  const node = createFunctionCallNode(
+    `${name.token}`,
+    groupForms(args).map(parseForm)
+  );
   console.log('node', node);
   return node;
 }
@@ -75,8 +101,8 @@ function parseExpressionLiteral(form: Form): ASTNode {
     fatalError(`invalid form "${form}"`);
     throw new Error();
   }
-  return Object.freeze({
-    type: (token.type as unknown) as ExpressionLiteral,
-    value: token.token,
-  });
+  return createExpressionLiteralNode(
+    (token.type as unknown) as ExpressionLiteral,
+    token.token
+  );
 }

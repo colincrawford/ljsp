@@ -1,3 +1,4 @@
+/** Read through an input stream of characters */
 import * as fs from 'fs';
 import * as os from 'os';
 
@@ -20,19 +21,14 @@ export function fromString(source: string): InputStream {
 }
 
 export function isFinished(inputStream: InputStream): boolean {
-  return inputStream.cursor >= inputStream.source.length - 1;
+  return inputStream.cursor >= inputStream.source.length;
 }
 
-export function peek(inputStream: InputStream): string {
-  if (isFinished(inputStream)) {
-    fatalError('"peek" called on an empty stream', inputStream);
-    throw new Error('Fatal Error');
-  }
-
+export function peek(inputStream: InputStream): string | undefined {
   return inputStream.source[inputStream.cursor];
 }
 
-export function next(inputStream: InputStream): string {
+export function next(inputStream: InputStream): string | undefined {
   const nextChar = peek(inputStream);
   const isNewline = nextChar === os.EOL;
   if (isNewline) {

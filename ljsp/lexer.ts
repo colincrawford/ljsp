@@ -25,21 +25,25 @@ export function tokenize(inputStream: InputStream): Token[] {
 export function readToken(inputStream: InputStream): Token {
   skipWhitespace(inputStream);
   const nextChar = peek(inputStream);
+  if (!nextChar) {
+    fatalError('No next token');
+    throw new Error();
+  }
   const tokenReader = getTokenReader(nextChar);
   return (tokenReader as TokenReader)(inputStream);
 }
 
 export function restOfLine(inputStream: InputStream): string {
-  const hitNewline: DoneReading = stream => result =>
+  const hitsNewline: DoneReading = stream => result =>
     isFinished(stream) || endsInNewline(result);
-  const result = readUntil(inputStream)(hitNewline);
+  const result = readUntil(inputStream)(hitsNewline);
   return result.replace(os.EOL, '');
 }
 
 const whitespaceChars = new Set(['\n', '\r', '\t', ' ']);
 
 export function skipWhitespace(inputStream: InputStream): InputStream {
-  while (whitespaceChars.has(peek(inputStream))) next(inputStream);
+  while (whitespaceChars.has(peek(inputStream) || '')) next(inputStream);
   return inputStream;
 }
 
