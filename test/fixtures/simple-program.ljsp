@@ -1,3 +1,0 @@
-(defn hello-world
-    ()
-    (console.log "Hello World!"))
